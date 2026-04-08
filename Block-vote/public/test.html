@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MetaMask Contract Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover { background: #45a049; }
+        .result {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>🧪 MetaMask Contract Test</h1>
+    <p><strong>Contract:</strong> 0xcC4AF8cCD07C0754a6A9B7177210A3534cDdF0ad</p>
+    <p><strong>Network:</strong> Polygon Amoy (Chain ID: 80002)</p>
+    
+    <hr>
+    
+    <div>
+        <button onclick="testMetaMask()">1. Test MetaMask Connection</button>
+        <button onclick="checkNetwork()">2. Check Network</button>
+        <button onclick="loadContract()">3. Load Contract</button>
+        <button onclick="testContractCalls()">4. Test Contract Calls</button>
+    </div>
+    
+    <div id="results"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.4/dist/web3.min.js"></script>
+    <script>
+        const CONTRACT_ADDRESS = '0xcC4AF8cCD07C0754a6A9B7177210A3534cDdF0ad';
+        const CONTRACT_ABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"candidateId","type":"uint256"},{"indexed":false,"internalType":"string","name":"name","type":"string"}],"name":"CandidateAdded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"voter","type":"address"},{"indexed":true,"internalType":"uint256","name":"candidateId","type":"uint256"}],"name":"VoteCast","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"voter","type":"address"}],"name":"VoterRegistered","type":"event"},{"anonymous":false,"inputs":[],"name":"VotingClosed","type":"event"},{"anonymous":false,"inputs":[],"name":"VotingOpened","type":"event"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"candidates","outputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"uint256","name":"voteCount","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"voters","outputs":[{"internalType":"bool","name":"isRegistered","type":"bool"},{"internalType":"bool","name":"hasVoted","type":"bool"},{"internalType":"uint256","name":"votedCandidateId","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"votingOpen","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_voter","type":"address"}],"name":"registerVoter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"string","name":"_name","type":"string"}],"name":"addCandidate","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"openVoting","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"closeVoting","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"registerSelf","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_candidateId","type":"uint256"}],"name":"castVote","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"getCandidateCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_candidateId","type":"uint256"}],"name":"getCandidate","outputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"uint256","name":"votes","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getResults","outputs":[{"internalType":"string[]","name":"names","type":"string[]"},{"internalType":"uint256[]","name":"votes","type":"uint256[]"}],"stateMutability":"view","type":"function"}];
+        
+        let web3;
+        let contract;
+        let account;
+        
+        function log(message, type = 'result') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = message;
+            document.getElementById('results').appendChild(div);
+            console.log(message);
+        }
+        
+        async function testMetaMask() {
+            document.getElementById('results').innerHTML = '';
+            
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    log('❌ MetaMask not found! Please install MetaMask.', 'error');
+                    return;
+                }
+                
+                log('✅ MetaMask detected', 'success');
+                
+                web3 = new Web3(window.ethereum);
+                log('✅ Web3 initialized', 'success');
+                
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                account = accounts[0];
+                log(`✅ Connected to account: ${account}`, 'success');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkNetwork() {
+            try {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const chainIdDecimal = parseInt(chainId, 16);
+                
+                log(`Current Chain ID: ${chainIdDecimal} (0x${chainIdDecimal.toString(16)})`);
+                
+                if (chainIdDecimal === 80002) {
+                    log('✅ Connected to Polygon Amoy Testnet!', 'success');
+                } else {
+                    log(`❌ Wrong network! You're on chain ${chainIdDecimal}. Please switch to Polygon Amoy (80002).`, 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadContract() {
+            try {
+                if (!web3) {
+                    log('❌ Please run Test 1 first!', 'error');
+                    return;
+                }
+                
+                contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                log('✅ Contract loaded', 'success');
+                log(`Contract Address: ${CONTRACT_ADDRESS}`);
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testContractCalls() {
+            try {
+                if (!contract) {
+                    log('❌ Please run Test 3 first!', 'error');
+                    return;
+                }
+                
+                log('🔍 Testing contract calls...\n');
+                
+                // Test 1: Get owner
+                const owner = await contract.methods.owner().call();
+                log(`✅ Owner: ${owner}`, 'success');
+                
+                // Test 2: Check if user is owner
+                const isOwner = owner.toLowerCase() === account.toLowerCase();
+                log(`${isOwner ? '✅' : '❌'} You are ${isOwner ? '' : 'NOT '}the owner`, isOwner ? 'success' : 'result');
+                
+                // Test 3: Check voting status
+                const votingOpen = await contract.methods.votingOpen().call();
+                log(`Voting Open: ${votingOpen}`);
+                
+                // Test 4: Get candidate count
+                const candidateCount = await contract.methods.getCandidateCount().call();
+                log(`Candidate Count: ${candidateCount}`);
+                
+                // Test 5: Get voter info
+                const voterInfo = await contract.methods.voters(account).call();
+                log(`Your Voter Status:\n  Registered: ${voterInfo.isRegistered}\n  Has Voted: ${voterInfo.hasVoted}`);
+                
+                log('\n✅ ALL CONTRACT CALLS SUCCESSFUL!', 'success');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
