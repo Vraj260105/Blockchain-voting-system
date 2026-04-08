@@ -30,8 +30,9 @@
     "express-validator": "^7.2.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.11.3",
     "nodemailer": "^6.9.15",
+    "pg": "^8.20.0",
+    "pg-hstore": "^2.3.4",
     "resend": "^6.4.0",
     "sequelize": "^6.37.4",
     "web3": "^1.10.4"
