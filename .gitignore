@@ -43,6 +43,7 @@ deploy_error.log
 
 # ── Vercel / Deployment artifacts ─────────────────
 .vercel/
+railway.json
 
 # ── Database dumps (sensitive) ────────────────────
 *.sql
