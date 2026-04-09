@@ -34,14 +34,12 @@ ElectionMetadata.belongsTo && ElectionMetadata.belongsTo(User, { foreignKey: 'cr
 VoteNotification.belongsTo && VoteNotification.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 User.hasMany && User.hasMany(VoteNotification, { foreignKey: 'userId', as: 'notifications' });
 
-// Sync database (only in development)
+// Sync database (everywhere so production databases are initialized)
 const syncDatabase = async () => {
   try {
-    if (process.env.NODE_ENV === 'development') {
-      // alter:true is removed because Sequelize has a known bug with Postgres ENUMs during alter.
-      await sequelize.sync({ force: false });
-      console.log('✅ Database synchronized successfully.');
-    }
+    // force: false ensures we strictly CREATE tables without dropping them.
+    await sequelize.sync({ force: false });
+    console.log('✅ Database synchronized successfully.');
   } catch (error) {
     console.error('❌ Database synchronization failed:', error);
     throw error;
