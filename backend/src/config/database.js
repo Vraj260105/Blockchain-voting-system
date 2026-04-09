@@ -3,12 +3,7 @@ require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-const sequelize = new Sequelize({
-  database: process.env.DB_NAME,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT || 5432,
+const commonConfig = {
   dialect: 'postgres',
   logging: isProduction ? false : console.log,
   pool: {
@@ -22,14 +17,21 @@ const sequelize = new Sequelize({
     underscored: false,
     freezeTableName: true
   },
-  // SSL required by most hosted Postgres providers (Render, Supabase, Neon, Aiven)
   dialectOptions: isProduction ? {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
+    ssl: { require: true, rejectUnauthorized: false }
   } : {}
-});
+};
+
+const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, commonConfig)
+  : new Sequelize({
+      database: process.env.DB_NAME,
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT || 5432,
+      ...commonConfig
+    });
 
 // Test the connection
 const testConnection = async () => {
