@@ -11,7 +11,6 @@ const UserSession = sequelize.define('user_sessions', {
   sessionId: {
     type: DataTypes.STRING(255),
     allowNull: false,
-    unique: true,
     comment: 'Unique session identifier'
   },
   userId: {

@@ -52,3 +52,4 @@ railway.json
 Suggestions
 DATABASE_MIGRATION.md
 blockchain_voting_backup.sql
+backend/migrate-mysql-to-postgres.js

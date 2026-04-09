@@ -135,15 +135,6 @@ export default function ElectionsPage() {
     finally { setCreating(false); }
   };
 
-  const handleTrigger = async (electionId: number) => {
-    setTriggeringId(electionId);
-    try {
-      await web3Service.triggerElectionStatus(electionId);
-      await loadElections();
-    } catch (err: any) { const msg = normalizeWeb3Error(err); setError(msg); toast.error('Failed to trigger election', { description: msg }); }
-    finally { setTriggeringId(null); }
-  };
-
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 14px', background: '#111827',
     border: '1px solid #374151', borderRadius: 10, color: '#E5E7EB',
@@ -383,19 +374,6 @@ export default function ElectionsPage() {
                     <span style={{ color: '#9CA3AF', fontSize: 12 }}>{election.candidateCount} candidate{election.candidateCount !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
-
-                {/* Trigger button for scheduled elections */}
-                {canTrigger && (
-                  <motion.button
-                    onClick={(e) => { e.stopPropagation(); handleTrigger(election.id); }}
-                    disabled={triggeringId === election.id}
-                    whileTap={{ scale: 0.96 }}
-                    style={{ marginTop: 12, width: '100%', padding: '8px 0', background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 8, color: '#FBBF24', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                  >
-                    {triggeringId === election.id ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                    Trigger Status Update
-                  </motion.button>
-                )}
 
                 {/* View Results button for closed elections */}
                 {status === 'closed' && election.totalVotes > 0 && (

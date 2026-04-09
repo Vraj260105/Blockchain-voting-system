@@ -47,6 +47,15 @@ const User = sequelize.define('users', {
   lastLogin: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  failedLoginAttempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    allowNull: false
+  },
+  lockedUntil: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
 }, {
   timestamps: true,
@@ -119,6 +128,26 @@ User.findActiveByEmail = async function(email) {
       isActive: true 
     }
   });
+};
+
+/** Increment failed login counter; lock account for 15 min after 5 failures */
+User.recordFailedLogin = async function(userId) {
+  const user = await this.findByPk(userId);
+  if (!user) return;
+  const attempts = (user.failedLoginAttempts || 0) + 1;
+  const update = { failedLoginAttempts: attempts };
+  if (attempts >= 5) {
+    update.lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // lock 15 min
+  }
+  await user.update(update);
+};
+
+/** Clear failed login counter and lock on successful login */
+User.resetLoginAttempts = async function(userId) {
+  await this.update(
+    { failedLoginAttempts: 0, lockedUntil: null },
+    { where: { id: userId } }
+  );
 };
 
 // Hooks

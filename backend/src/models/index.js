@@ -7,6 +7,7 @@ const ActivityLog = require('./ActivityLog');
 const ElectionRegistration = require('./ElectionRegistration');
 const ElectionMetadata = require('./ElectionMetadata');
 const VoteNotification = require('./VoteNotification');
+const ElectionResult = require('./ElectionResult');
 
 // Import Sequelize operators for use in models
 const { Op } = require('sequelize');
@@ -37,8 +38,8 @@ User.hasMany && User.hasMany(VoteNotification, { foreignKey: 'userId', as: 'noti
 const syncDatabase = async () => {
   try {
     if (process.env.NODE_ENV === 'development') {
-      // alter:true safely adds new columns without dropping existing data
-      await sequelize.sync({ force: false, alter: true });
+      // alter:true is removed because Sequelize has a known bug with Postgres ENUMs during alter.
+      await sequelize.sync({ force: false });
       console.log('✅ Database synchronized successfully.');
     }
   } catch (error) {
@@ -58,5 +59,6 @@ module.exports = {
   ElectionRegistration,
   ElectionMetadata,
   VoteNotification,
+  ElectionResult,
   syncDatabase
 };

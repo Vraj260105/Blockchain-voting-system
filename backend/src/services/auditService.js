@@ -351,7 +351,7 @@ class AuditService {
       };
     }
 
-    return await AuditLog.findAll({
+    return await AuditLog.findAndCountAll({
       where,
       order: [['createdAt', 'DESC']],
       limit,

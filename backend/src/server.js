@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const { sequelize, testConnection, syncDatabase, OTP, VoteNotification, User } = require('./models');
 const walletService = require('./services/walletService');
 const emailService = require('./services/emailService');
@@ -14,9 +15,29 @@ const PORT = process.env.PORT || 5000;
 // Trust proxy for rate limiting behind reverse proxy
 app.set('trust proxy', 1);
 
-// Security middleware
+// Security middleware — strict CSP that allows MetaMask (window.ethereum) and Web3 RPCs
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],   // needed for inline styles
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: [
+        "'self'",
+        process.env.CLIENT_URL || 'http://localhost:5173',
+        'https://rpc-amoy.polygon.technology',
+        'https://polygon-amoy.infura.io',
+        'wss://polygon-amoy.infura.io',
+        'https://api.polygonscan.com',
+      ],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
+  },
 }));
 
 // CORS configuration
@@ -43,18 +64,28 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Rate limiting
+// Global rate limit — generous, just protects against floods
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many requests from this IP, please try again later.'
-  },
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  message: { success: false, message: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use(limiter);
+
+// Strict auth rate limit — 10 attempts per 15 min per IP (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, message: 'Too many authentication attempts. Please wait 15 minutes and try again.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Only count failed attempts
+});
+
+// Cookie parser (needed to read HttpOnly cookies if set in future)
+app.use(cookieParser());
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -73,11 +104,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
-app.use('/api/auth', require('./routes/auth'));
+// API Routes — auth routes use strict rate limiter
+app.use('/api/auth', authLimiter, require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/wallet', require('./routes/walletRoutes'));
 app.use('/api/audit-logs', require('./routes/auditLogs'));
+app.use('/api/election-results', require('./routes/electionResults'));
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -221,6 +253,10 @@ const startServer = async () => {
       }
     }, NOTIFICATION_INTERVAL_MS);
     console.log(`🕐 Notification dispatcher scheduled every ${NOTIFICATION_INTERVAL_MS / 60000} minutes.`);
+
+    // ✅ Start Blockchain Automator
+    const blockchainCron = require('./services/blockchainCron');
+    blockchainCron.start();
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

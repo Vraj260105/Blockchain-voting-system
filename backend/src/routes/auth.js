@@ -216,15 +216,29 @@ router.post('/login', async (req, res) => {
         message: 'Invalid credentials'
       });
     }
-    
+
+    // Check if account is locked
+    if (user.lockedUntil && new Date() < user.lockedUntil) {
+      const minutesLeft = Math.ceil((user.lockedUntil - Date.now()) / 60000);
+      return res.status(423).json({
+        success: false,
+        message: `Account temporarily locked due to too many failed attempts. Try again in ${minutesLeft} minute(s).`
+      });
+    }
+
     // Check password
     const isValidPassword = await user.comparePassword(password);
     if (!isValidPassword) {
-      // Log failed login attempt
+      // Record failed attempt (locks after 5)
+      await User.recordFailedLogin(user.id);
       await AuditService.logLogin(user.id, false, req, 'Invalid password');
+      const attemptsAfter = (user.failedLoginAttempts || 0) + 1;
+      const remaining = Math.max(0, 5 - attemptsAfter);
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: remaining > 0
+          ? `Invalid credentials. ${remaining} attempt(s) remaining before lockout.`
+          : 'Invalid credentials. Account has been locked for 15 minutes.'
       });
     }
     
@@ -293,7 +307,10 @@ router.post('/verify-login', async (req, res) => {
     
     // Update last login
     await user.update({ lastLogin: new Date() });
-    
+
+    // Reset failed login counter on successful OTP verification
+    await User.resetLoginAttempts(user.id);
+
     // Log successful login
     await AuditService.logLogin(user.id, true, req);
     await AuditService.logOTPVerification(user.id, 'login', true, req);

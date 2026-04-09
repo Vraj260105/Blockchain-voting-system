@@ -53,7 +53,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
       filters.endDate = new Date(endDate);
     }
 
-    const logs = await AuditService.getLogs(
+    const { count, rows: logs } = await AuditService.getLogs(
       filters,
       parseInt(limit),
       parseInt(offset)
@@ -75,8 +75,10 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
         logs,
         filters,
         pagination: {
+          total: count,
           limit: parseInt(limit),
-          offset: parseInt(offset)
+          offset: parseInt(offset),
+          pages: Math.ceil(count / parseInt(limit)),
         }
       }
     });

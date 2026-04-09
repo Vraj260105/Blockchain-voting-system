@@ -16,7 +16,7 @@ export const useWalletValidation = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const [state, setState] = useState<WalletValidationState>({
     isValidating: false,
-    isValid: false,
+    isValid: true,       // ✅ Assume valid until we actually finish checking
     connectedAddress: '',
     registeredAddress: null,
     error: null,
@@ -36,39 +36,33 @@ export const useWalletValidation = () => {
         setState(prev => ({ 
           ...prev, 
           isValidating: false, 
-          isValid: false,
+          isValid: true,   // ✅ No wallet in MetaMask — let them through, web3 guard handles this
           error: 'No wallet connected'
         }));
-        
-        if (forceLogout) {
-          toast.error('No wallet connected. Please connect MetaMask.');
-          logout();
-        }
-        return { isValid: false, message: 'No wallet connected' };
+        return { isValid: true, message: 'No wallet connected' };
       }
 
       // Get registered wallet address from backend
       const walletStatus = await apiService.getWalletStatus();
-      if (!walletStatus.success || !walletStatus.data.hasWallet) {
+
+      // ✅ If user hasn't registered a wallet yet — don't block them
+      // The mismatch check only makes sense when they HAVE registered one
+      if (!walletStatus.success || !walletStatus.data?.hasWallet || !walletStatus.data?.walletAddress) {
         setState(prev => ({ 
           ...prev, 
           isValidating: false,
-          isValid: false,
+          isValid: true,     // ✅ No registered wallet = no mismatch to detect
           connectedAddress,
-          error: 'No wallet registered'
+          registeredAddress: null,
+          error: null,
         }));
-        
-        if (forceLogout) {
-          toast.error('Please register a wallet address in your profile.');
-          logout();
-        }
-        return { isValid: false, message: 'No wallet registered' };
+        return { isValid: true, message: 'No wallet registered — skipping check' };
       }
 
       const registeredAddress = walletStatus.data.walletAddress;
       
       // Compare addresses (case-insensitive)
-      const isMatching = connectedAddress.toLowerCase() === registeredAddress?.toLowerCase();
+      const isMatching = connectedAddress.toLowerCase() === registeredAddress.toLowerCase();
       
       setState(prev => ({
         ...prev,
@@ -76,7 +70,7 @@ export const useWalletValidation = () => {
         isValid: isMatching,
         connectedAddress,
         registeredAddress,
-        error: isMatching ? null : 'Wallet mismatch'
+        error: isMatching ? null : 'The connected MetaMask wallet does not match your registered wallet address.',
       }));
 
       if (!isMatching && forceLogout) {
@@ -94,18 +88,14 @@ export const useWalletValidation = () => {
 
     } catch (error: any) {
       console.error('Wallet validation error:', error);
+      // ✅ On API error, don't block the user — just log it quietly
       setState(prev => ({ 
         ...prev, 
         isValidating: false, 
-        isValid: false,
-        error: error.message || 'Validation failed'
+        isValid: true,    // ✅ Fail open on network errors — don't punish user
+        error: null,
       }));
-      
-      if (forceLogout) {
-        toast.error('Wallet validation failed. Please try again.');
-        logout();
-      }
-      return { isValid: false, message: error.message || 'Validation failed' };
+      return { isValid: true, message: 'Validation skipped due to error' };
     }
   }, [isAuthenticated, user, logout]);
 

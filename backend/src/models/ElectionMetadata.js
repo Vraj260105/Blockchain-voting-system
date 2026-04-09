@@ -11,7 +11,6 @@ const ElectionMetadata = sequelize.define('election_metadata', {
   electionId: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    unique: true,
     comment: 'On-chain election ID (the mapping key)',
   },
   createdBy: {
