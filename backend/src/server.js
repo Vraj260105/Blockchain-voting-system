@@ -257,6 +257,10 @@ const startServer = async () => {
     // ✅ Start Blockchain Automator
     const blockchainCron = require('./services/blockchainCron');
     blockchainCron.start();
+
+    // 💓 Start DB Keepalive (pings Supabase every 2 days to prevent inactivity pause)
+    const dbKeepalive = require('./services/dbKeepalive');
+    dbKeepalive.start();
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
