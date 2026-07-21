@@ -447,7 +447,7 @@ class Web3Service {
               {
                 chainId: '0x13882',
                 chainName: 'Polygon Amoy Testnet',
-                rpcUrls: [import.meta.env.VITE_POLYGON_RPC_URL || 'https://rpc-amoy.polygon.technology'],
+                rpcUrls: [import.meta.env.VITE_POLYGON_RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com'],
                 nativeCurrency: {
                   name: 'POL',
                   symbol: 'POL',
@@ -490,7 +490,7 @@ export default web3Service;
 // Used by the public /elections/:id/results page
 async function buildReadOnlyContract() {
   const Web3 = (await import('web3')).default;
-  const rpc = import.meta.env.VITE_POLYGON_RPC_URL || 'https://rpc-amoy.polygon.technology';
+  const rpc = import.meta.env.VITE_POLYGON_RPC_URL || 'https://polygon-amoy-bor-rpc.publicnode.com';
   const web3ro = new Web3(new (Web3 as any).providers.HttpProvider(rpc));
   const contractModule = await import('../contracts/VotingSystem.json');
   const raw: any = contractModule.default || contractModule;
