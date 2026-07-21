@@ -62,11 +62,11 @@ export function normalizeWeb3Error(error: any): string {
   return clean.length > 120 ? clean.slice(0, 120) + '…' : clean;
 }
 
-// Polygon Amoy RPC endpoints (fallback order)
+// Polygon Amoy RPC endpoints (fallback order) — tested 2026-07-21
 const AMOY_RPC_ENDPOINTS = [
-  'https://rpc-amoy.polygon.technology',
-  'https://polygon-amoy.drpc.org',
-  'https://rpc.ankr.com/polygon_amoy',
+  'https://polygon-amoy-bor-rpc.publicnode.com', // ✅ Primary (no key needed)
+  'https://80002.rpc.thirdweb.com',              // ✅ Fallback (no key needed)
+  'https://polygon-amoy.drpc.org',               // ⚠️  May rate-limit
 ];
 
 class Web3Service {
